@@ -12,7 +12,8 @@
 #include <string.h>
 
 static void signal_handler(int);
-static char *** cmdParser(char *);
+static void cmdParser(char *);
+static void tokenize(char * , char * []);
 
 static int backend = 0; /* whether execute program in backend */
 
@@ -29,7 +30,7 @@ main(int argc, char * argv[])
 
     char cmd[1024]; /* max length of command is 1024 */    
     int num_char;   /* length of command */
-    char c, *ptr, *** cmdList;
+    char c, *ptr;
     int status;
     pid_t pid;
     
@@ -49,8 +50,8 @@ main(int argc, char * argv[])
         }
         *ptr = 0;
     
-        cmdList = cmdParser(cmd);
-
+        cmdParser(cmd);
+        
         if (backend)
         {
             if ((pid = vfork()) < 0)   
@@ -59,12 +60,14 @@ main(int argc, char * argv[])
             } 
             else if (pid == 0)    /* child */
             {
+            /*
                 if (execvp(cmdList[0][0], cmdList[0]) < 0)
                 {
                     write(2, "ERROR: execvp error!\n", 31);
                     break;
                 }
                 break;
+                */
             }
             else    /* parent */
             {
@@ -75,17 +78,52 @@ main(int argc, char * argv[])
     }
 }
 
-static char *** 
+static void
 cmdParser(char * cmd_line)
 {
-    cmd_line += strlen(cmd_line)-1;
-    if (*cmd_line == '&')
+    char * ptr = cmd_line + strlen(cmd_line)-1;
+    if (*ptr == '&')
     {
+        *ptr = 0;
         backend = 1;
+        
     }
-    char *** cmd;
-    **cmd = "matmult_p";
-    return cmd;
+    
+    char * buf[1024];
+    printf("%s\n", cmd_line);
+    tokenize(cmd_line, buf);
+    /*
+    int i = 0;
+    for (i = 0; i < 10; i++)
+    {
+        printf("%s\n", buf[i]);
+    }*/
+    
+}
+
+static void
+tokenize(char * s, char * buf[])
+{
+    char c, token[1024], *ptr_t;
+    char * ptr = s;
+    int i = 0;
+    
+    while ((c = *ptr++) != 0)
+    {
+        //printf("%c\n", c);
+        ptr_t = token;
+        while (c != ' ' && c != '\n' && c != 0)
+        {
+            printf("%c\n", c);
+            *ptr_t++ = c;
+            c = *ptr++;
+        }
+        *ptr_t = 0;
+        buf[i] = token;
+        printf("%s\n", buf[i]);
+        i++;
+    }
+    
 }
 
 static void 
