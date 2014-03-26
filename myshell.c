@@ -11,9 +11,11 @@
 #include <sys/wait.h>
 #include <string.h>
 
+#define MAX_LEN_CMD 1024
+
 static void signal_handler(int);
 static void cmdParser(char *);
-static void tokenize(char * , char * []);
+static int tokenize(char * , char * []);
 
 static int backend = 0; /* whether execute program in backend */
 
@@ -28,7 +30,7 @@ main(int argc, char * argv[])
     {
     }
 
-    char cmd[1024]; /* max length of command is 1024 */    
+    char cmd[MAX_LEN_CMD]; /* max length of command is 1024 */    
     int num_char;   /* length of command */
     char c, *ptr;
     int status;
@@ -43,7 +45,7 @@ main(int argc, char * argv[])
     
         ptr = cmd;
         num_char = 0;
-        while (num_char < 1024 && ((c = getchar()) != EOF && c != '\n'))
+        while (num_char < MAX_LEN_CMD && ((c = getchar()) != EOF && c != '\n'))
         {
             *ptr++ = c;
             num_char++;
@@ -51,6 +53,7 @@ main(int argc, char * argv[])
         *ptr = 0;
     
         cmdParser(cmd);
+
         
         if (backend)
         {
@@ -90,40 +93,35 @@ cmdParser(char * cmd_line)
     }
     
     char * buf[1024];
+    int i = tokenize(cmd_line, buf);
     printf("%s\n", cmd_line);
-    tokenize(cmd_line, buf);
-    /*
-    int i = 0;
-    for (i = 0; i < 10; i++)
-    {
-        printf("%s\n", buf[i]);
-    }*/
+    
     
 }
 
-static void
+/* store tokens in buf
+ * and return number of tokens
+ */
+static int
 tokenize(char * s, char * buf[])
 {
-    char c, token[1024], *ptr_t;
-    char * ptr = s;
     int i = 0;
-    
-    while ((c = *ptr++) != 0)
+    char * t;
+    char * tmp = strcpy(tmp, s);
+
+    while ((t = strtok(tmp, " ")) != NULL)
     {
-        //printf("%c\n", c);
-        ptr_t = token;
-        while (c != ' ' && c != '\n' && c != 0)
-        {
-            printf("%c\n", c);
-            *ptr_t++ = c;
-            c = *ptr++;
-        }
-        *ptr_t = 0;
-        buf[i] = token;
-        printf("%s\n", buf[i]);
-        i++;
+    	tmp = NULL;
+        buf[i++] = t;
     }
-    
+    /*
+    int j;
+    for (j = 0; j < i; j++)
+    {
+        printf("%s\n", buf[j]);
+    }    
+    */
+    return i;
 }
 
 static void 
