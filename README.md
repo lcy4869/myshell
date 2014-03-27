@@ -1,4 +1,4 @@
 myshell
 =======
 
-Team member: Jingzhi Gao, Tianyou Luo
+Team member: Jingzhi Gao, Joel Mough and Tianyou Luo
