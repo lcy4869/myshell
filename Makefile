@@ -1,7 +1,10 @@
 
 generated_files_matmult_p = multiply matmult_p matmult_p.o multiply.o matformatter matformatter.o
 
-all: matmult_p matformatter myshell test
+all: matmult_p matmult_t matformatter myshell test
+
+matmult_t: matmult_t.c
+	gcc matmult_t.c -lm -o matmult_t
 
 matmult_p: matmult_p.c multiply.c matrix_read.h matrix_read.c
 	gcc -c matrix_read.c -o matrix_read.o

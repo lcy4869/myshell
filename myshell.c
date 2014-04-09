@@ -1,5 +1,5 @@
 /* File:    myshell.c
- * Author:  Tianyou Luo
+ * Author:  Tianyou Luo, piping added by Joel Mough
  * Date:    03/24/14
  */
  
@@ -27,7 +27,8 @@ typedef struct Command
 static void signal_handler(int);
 static int cmdParser(char *, Command []);
 static int tokenize(char * , char * []);
-void change_std(Command *);
+void change_std(Command *, int, int);
+int check_semicomma(char * );
 
 static int backend = 0; /* whether execute program in backend */
 static int foreground_pid;
@@ -74,6 +75,10 @@ main(int argc, char * argv[])
             *ptr++ = c;
             num_char++;
         }
+        // exit when hit ctrl-d
+        if (c == EOF)
+        	return 0;
+
         *ptr = 0;
     	
         // check whether it's backend program
@@ -96,73 +101,75 @@ main(int argc, char * argv[])
         }
 
         num_program = cmdParser(cmd, cmd_list) + 1;
-        //printf("here3\n");
 
         //printf("%d\n", num_program );
         
         int pipe_index = 0;
         int pfd[num_pipe][2];
-        /*
-        for (; pipe_index < num_pipe; pipe_index++)
-        {
-        	if (pipe(pfd[pipe_index]) < 0)
-        	{
-        		write(2, "ERROR: can NOT create pipe!\n", 27);
-        		return;
-        	}
-        	printf("%d_%d\n", pfd[num_pipe][0], pfd[num_pipe][1]);
-        }
-        pipe_index = 0;
-		
-        /*
-        if (mkfifo("fifo", O_RDWR) < 0)
-        {
-        	write(2, "ERROR: can NOT create pipe!\n", 27);
-        	return;
-        }
-		*/
 
 
         int i;
         for (i = 0; i < num_program; i++)
         {
+			int a = 1;
+			int b = 1;
+			if (cmd_list[i].std_in != NULL) {
+        		a = strcmp(cmd_list[i].std_in, "|");	// pipe stdin
+													//printf("%d\n", a);
+			}
+			if (cmd_list[i].std_out != NULL) {
+        		b = strcmp(cmd_list[i].std_out, "|");	// pipe stdout
+			}
 
-        	int a = strcmp(cmd_list[i].std_in, "|");	// pipe stdin
-        	int b = strcmp(cmd_list[i].std_out, "|");	// pipe stdout
         	if (b == 0) {
-
+				pipe_index++;
         		if (pipe(pfd[pipe_index]) < 0)
         		{
         			write(2, "ERROR: can NOT create pipe!\n", 27);
         			return;
         		}
 
+
         	}
 
-        	if ((pid = vfork()) < 0)   
+        	if ((pid = fork()) < 0)   
         	{
             	write(2, "ERROR: fork error!\n", 19);
         	} 
         	else if (pid == 0)    /* child */
         	{
 
-        		if (a != 0 && b != 0)
-        		{
-        			change_std(&cmd_list[i]);
-        		}
         		
         		if (a == 0)
         		{
-        			dup2(pfd[pipe_index-1][0], STDIN_FILENO);
-					close(pfd[pipe_index-1][1]);
+					int workingIndex;
+					if (b != 0) {
+						workingIndex = pipe_index;
+					} else {
+						workingIndex = pipe_index - 1;
+					}
+
+					close(pfd[workingIndex][1]);
+        			if (dup2(pfd[workingIndex][0], STDIN_FILENO) < 0) {
+						printf("dup2 error\n");
+						perror("duplicating:");
+						return -1;
+					}
+
         		}
 
         		if (b == 0)
         		{
-        			dup2(pfd[pipe_index][1], STDOUT_FILENO);
-        			pipe_index++;
+        			if (dup2(pfd[pipe_index][1], STDOUT_FILENO) < 0) {
+						printf("dup2 error\n");
+						perror("duplicating:");
+						return -1;
+					}
+					close(pfd[pipe_index][0]);
+        			//pipe_index++;
         		}
-        		
+				change_std(&cmd_list[i], a, b);
+
             	if (execvp(cmd_list[i].program, cmd_list[i].arg) < 0)
             	{
                 	write(2, "ERROR: execvp error!\n", 31);
@@ -171,6 +178,13 @@ main(int argc, char * argv[])
         	}
         	else    /* parent */
         	{
+				// Dealing with some pipe issues.
+				if (a == 0) {	
+					close(pfd[pipe_index-1][0]);
+				}
+				if (b == 0) {
+					close(pfd[pipe_index][1]);
+				}
             	if (backend)
             	{
                 	if (signal(SIGCHLD, signal_handler))
@@ -242,6 +256,8 @@ cmdParser(char * cmd_line, Command cmd_list[])
             tmp_arg[0] = s;
             cmd_list[num_program].arg = tmp_arg;
             num_arg = 1;
+			//cmd_list[num_program].std_in = "stdin";
+			//cmd_list[num_program].std_out = "stdout";
         }
         else if (strcmp(s, ">") == 0 || strcmp(s, "1>") == 0)
         {
@@ -290,6 +306,7 @@ cmdParser(char * cmd_line, Command cmd_list[])
         }
         else if (strcmp(s, "|") == 0)
         {
+			//printf("num_program %d\n", num_program);
         	cmd_list[num_program].std_out = s;
         	cmd_list[num_program+1].std_in = s;
         	num_pipe++;
@@ -327,21 +344,24 @@ cmdParser(char * cmd_line, Command cmd_list[])
 }
 
 void
-change_std(Command * cmd)
+change_std(Command * cmd, int a, int b)
 {
 	int fd;
-	if (cmd->std_in != NULL)
+	if (cmd->std_in != NULL && (a != 0))
 	{
+
 		if (( fd = open ( cmd->std_in, O_RDONLY )) == -1 )
 		{
     		fprintf( stderr, "mysh error: can't open %s\n", cmd->std_in);
     		exit(1);
 		}
+		dup2(fd, STDIN_FILENO);
+		close(fd);
 		
 	}
-	if (cmd->std_out != NULL)
+	if (cmd->std_out != NULL && (b != 0))
         {
-            if (( fd = open ( cmd->std_out, O_WRONLY )) == -1 )
+            if (( fd = open ( cmd->std_out, O_WRONLY | O_CREAT)) == -1 )
                 {
                 fprintf( stderr, "mysh error: can't open %s\n", cmd->std_out);
                 exit(1);
@@ -417,7 +437,10 @@ signal_handler(int signo)
     if (signo == SIGINT)
     {
         printf("\n%s\n", "Catch SIGINT to terminal foreground process!\n");
-        kill(foreground_pid, SIGINT);
+        if (foreground_pid != -1)
+        {
+        	kill(foreground_pid, SIGINT);
+        }
         return;
     }
     else if (signo == SIGCHLD)
