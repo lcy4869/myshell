@@ -65,10 +65,7 @@ int readTwoMatrices(int *leftMatrix, int *rightMatrix, int *rows1, int *cols1, i
 		}
 		numRows1++;
 
-
  	}
-
-
 
  	int numRows2 = 0;
  	while (numRows2 < MAX_MATRIX_DIMENSION && !oneMatrix) {

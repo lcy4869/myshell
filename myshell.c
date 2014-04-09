@@ -30,6 +30,7 @@ static int tokenize(char * , char * []);
 void change_std(Command *, int, int);
 int check_semicomma(char * );
 
+
 static int backend = 0; /* whether execute program in backend */
 static int foreground_pid;
 static int background_pid_list[1024];
