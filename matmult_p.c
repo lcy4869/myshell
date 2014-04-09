@@ -10,19 +10,6 @@
  * Team: 
  */
 
- // How to read in the matrix is what is confusing me...hmm. Have to look over this. 
-// Should we assumed it will be input put [1, 2, 3][4, 5, 6][7, 8, 9 ] and then another matrix?
- // Like a string?
-
- // Basic idea is not that hard. Use shmtcl to set up the shared memory segment. Then basically for each id in the new matrix
- // you will fork at the moment, and the the "m" and "n" variables to find the appropriate row column combos. Process them
- // and store in the stored memory segment. Once all this is done, we "write" to STD_OUTFILENO and are good.
-
- // Each line imported from STDIN will will hold a matrix; blank line separates the two. So, like this
- // 1 2
- // 1 2
- // *blan line*
- // and continue; WIll read in char at a time, convert, and move along. 
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -132,6 +119,8 @@
  		}
  		
  	}
+	//putc('\n', stdout);
+	//putc('\n', stdout);
 
 	releaseSharedMemory(keys, 3);
 	if (!normal) {
