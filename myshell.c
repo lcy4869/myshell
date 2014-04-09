@@ -28,12 +28,12 @@ static void signal_handler(int);
 static int cmdParser(char *, Command []);
 static int tokenize(char * , char * []);
 void change_std(Command *);
-int check_semicomma(char * );
 
 static int backend = 0; /* whether execute program in backend */
 static int foreground_pid;
 static int background_pid_list[1024];
 static int num_background_p;
+static int num_pipe;
 
 
 int
@@ -68,6 +68,7 @@ main(int argc, char * argv[])
     	cmd[0] = 0;
         ptr = cmd;
         num_char = 0;
+
         while (num_char < MAX_LEN_CMD && ((c = getchar()) != EOF && c != '\n'))
         {
             *ptr++ = c;
@@ -85,30 +86,84 @@ main(int argc, char * argv[])
         int ii;
         for (ii = 0; ii < num_program; ii++)
         {	
-        	printf("here1\n");
+        	//printf("here1\n");
         	cmd_list[ii].program = NULL;
         	cmd_list[ii].std_in = NULL;
         	cmd_list[ii].std_out = NULL;
         	cmd_list[ii].std_err = NULL;
         	cmd_list[ii].arg = NULL;
-        	printf("here2\n");
+        	//printf("here2\n");
         }
 
         num_program = cmdParser(cmd, cmd_list) + 1;
-        printf("here3\n");
+        //printf("here3\n");
 
-        printf("%d\n", num_program );
+        //printf("%d\n", num_program );
+        
+        int pipe_index = 0;
+        int pfd[num_pipe][2];
+        /*
+        for (; pipe_index < num_pipe; pipe_index++)
+        {
+        	if (pipe(pfd[pipe_index]) < 0)
+        	{
+        		write(2, "ERROR: can NOT create pipe!\n", 27);
+        		return;
+        	}
+        	printf("%d_%d\n", pfd[num_pipe][0], pfd[num_pipe][1]);
+        }
+        pipe_index = 0;
+		
+        /*
+        if (mkfifo("fifo", O_RDWR) < 0)
+        {
+        	write(2, "ERROR: can NOT create pipe!\n", 27);
+        	return;
+        }
+		*/
+
+
         int i;
         for (i = 0; i < num_program; i++)
         {
+
+        	int a = strcmp(cmd_list[i].std_in, "|");	// pipe stdin
+        	int b = strcmp(cmd_list[i].std_out, "|");	// pipe stdout
+        	if (b == 0) {
+
+        		if (pipe(pfd[pipe_index]) < 0)
+        		{
+        			write(2, "ERROR: can NOT create pipe!\n", 27);
+        			return;
+        		}
+
+        	}
+
         	if ((pid = vfork()) < 0)   
         	{
             	write(2, "ERROR: fork error!\n", 19);
         	} 
         	else if (pid == 0)    /* child */
         	{
-                change_std(&cmd_list[i]);
-            	if (execvp(cmd_list[i].program, argv) < 0)
+
+        		if (a != 0 && b != 0)
+        		{
+        			change_std(&cmd_list[i]);
+        		}
+        		
+        		if (a == 0)
+        		{
+        			dup2(pfd[pipe_index-1][0], STDIN_FILENO);
+					close(pfd[pipe_index-1][1]);
+        		}
+
+        		if (b == 0)
+        		{
+        			dup2(pfd[pipe_index][1], STDOUT_FILENO);
+        			pipe_index++;
+        		}
+        		
+            	if (execvp(cmd_list[i].program, cmd_list[i].arg) < 0)
             	{
                 	write(2, "ERROR: execvp error!\n", 31);
                 	continue;
@@ -135,7 +190,7 @@ main(int argc, char * argv[])
         	}
     	}
 
-    	dup2(0, STDIN_FILENO);
+    	//dup2(0, STDIN_FILENO);
 
     }
 }
@@ -143,6 +198,7 @@ main(int argc, char * argv[])
 static int
 cmdParser(char * cmd_line, Command cmd_list[])
 {
+	num_pipe = 0;
     int num_program = 0;
     char * buf[1024];
     int i = tokenize(cmd_line, buf);
@@ -151,21 +207,21 @@ cmdParser(char * cmd_line, Command cmd_list[])
 
     if (i < 0)
     {
-        return -1;
+        return;
     }
 
     int j;
     int programEnds = 0;
     int programBegin = 1;
-
+    int num_arg = 0;
     for (j = 0; j < i; j++)
     {
-        printf("%s\n", buf[j]);
+        //printf("%s\n", buf[j]);
 
         if (num_program >= 1024) 
         {
             write(2, "ERROR: too many programs!\n", 26);
-            return -1;
+            return;
         }
         
         char * s = buf[j];
@@ -173,7 +229,7 @@ cmdParser(char * cmd_line, Command cmd_list[])
         // printf("num_program:\t%d\n", num_program);
         if (programBegin)
         {
-        	printf("pars:%s\n", s);
+            //printf("pars:%s\n", s);
 
   	        if (check_semicomma(s))
   	      	{
@@ -181,12 +237,17 @@ cmdParser(char * cmd_line, Command cmd_list[])
         	}
             cmd_list[num_program].program = s;
             programBegin = 0;
+
+            char * tmp_arg[1024];
+            tmp_arg[0] = s;
+            cmd_list[num_program].arg = tmp_arg;
+            num_arg = 1;
         }
         else if (strcmp(s, ">") == 0 || strcmp(s, "1>") == 0)
         {
         	j++;
         	s = buf[j];
-        	printf("parsing:%s\n", s);
+        	//printf("parsing:%s\n", s);
   	        if (check_semicomma(s))
   	      	{
         		programEnds = 1;
@@ -195,7 +256,7 @@ cmdParser(char * cmd_line, Command cmd_list[])
         } 
         else if (strcmp(s, "<") == 0)
         {
-        	printf("parsing:%s\n", s);
+        	//printf("parsing:%s\n", s);
 
         	j++;
             s = buf[j];
@@ -227,14 +288,23 @@ cmdParser(char * cmd_line, Command cmd_list[])
             cmd_list[num_program].std_out = s;
             cmd_list[num_program].std_err = s;
         }
-        else if (strcmp(s, "|"))
+        else if (strcmp(s, "|") == 0)
         {
-
+        	cmd_list[num_program].std_out = s;
+        	cmd_list[num_program+1].std_in = s;
+        	num_pipe++;
+        	programEnds = 1;
+        }
+        else
+        {
+        	cmd_list[num_program].arg[num_arg] = s;
+        	num_arg++;
         }
         
 
         if (programEnds)
         {
+        	cmd_list[num_program].arg[num_arg] = NULL;
         	num_program++;
         	programBegin = 1;
         	programEnds = 0;
@@ -242,7 +312,8 @@ cmdParser(char * cmd_line, Command cmd_list[])
     }
 
     // print programs
-    for (i = 0; i < 2; i++)
+    /*
+    for (i = 0; i < num_program+1; i++)
     {
     	Command cmd = cmd_list[i];
     	printf("program: \t%s\n", cmd.program);
@@ -250,7 +321,7 @@ cmdParser(char * cmd_line, Command cmd_list[])
     	printf("standout:\t%s\n", cmd.std_out);
     	printf("standerr:\t%s\n\n", cmd.std_err);
     }
-
+    */
     return num_program;
     
 }
@@ -266,13 +337,28 @@ change_std(Command * cmd)
     		fprintf( stderr, "mysh error: can't open %s\n", cmd->std_in);
     		exit(1);
 		}
-		dup2(fd, STDIN_FILENO);
-		close(fd);
+		
 	}
-	else
-	{
-		dup2(0, STDIN_FILENO);
-	} 
+	if (cmd->std_out != NULL)
+        {
+            if (( fd = open ( cmd->std_out, O_WRONLY )) == -1 )
+                {
+                fprintf( stderr, "mysh error: can't open %s\n", cmd->std_out);
+                exit(1);
+                }
+                dup2(fd, STDOUT_FILENO);
+                close(fd);
+        } 
+        if (cmd->std_err != NULL)
+        {
+            if (( fd = open ( cmd->std_err, O_WRONLY )) == -1 )
+                {
+                fprintf( stderr, "mysh error: can't open %s\n", cmd->std_out);
+                exit(1);
+                }
+                dup2(fd, STDERR_FILENO);
+                close(fd);
+        }
 }
 
 /* check ';' in the end of given token */
@@ -343,6 +429,8 @@ signal_handler(int signo)
         // printf("%d\n", pid);
         // printf("%d\n", foreground_pid);
         // printf("get SIGCHLD\n");
+        if (foreground_pid != -1 && pid == foreground_pid)
+        	return;
         
         return;
     }   
