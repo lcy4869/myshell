@@ -61,7 +61,8 @@
 	keys[0] = leftArrayKey;
 	keys[1] = rightArrayKey;
 	keys[2] = sharedMemKey;
-	
+	//printf("%d\t%d\t%d\t%d\n", numRows1, itemsCol1, numRows2, itemsCol2);
+
 	int pids[MAX_MATRIX_DIMENSION][MAX_MATRIX_DIMENSION];
  	//printf("%d\t%d\n", numRows1, itemsCol2);
  	for (i = 0; i < numRows1; i++) {

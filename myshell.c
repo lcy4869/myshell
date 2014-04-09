@@ -28,6 +28,7 @@ static void signal_handler(int);
 static int cmdParser(char *, Command []);
 static int tokenize(char * , char * []);
 void change_std(Command *);
+int check_semicomma(char * );
 
 static int backend = 0; /* whether execute program in backend */
 static int foreground_pid;
@@ -100,13 +101,13 @@ main(int argc, char * argv[])
         int i;
         for (i = 0; i < num_program; i++)
         {
-        	change_std(&cmd_list[i]);
         	if ((pid = vfork()) < 0)   
         	{
             	write(2, "ERROR: fork error!\n", 19);
         	} 
         	else if (pid == 0)    /* child */
         	{
+                change_std(&cmd_list[i]);
             	if (execvp(cmd_list[i].program, argv) < 0)
             	{
                 	write(2, "ERROR: execvp error!\n", 31);
@@ -150,7 +151,7 @@ cmdParser(char * cmd_line, Command cmd_list[])
 
     if (i < 0)
     {
-        return;
+        return -1;
     }
 
     int j;
@@ -164,7 +165,7 @@ cmdParser(char * cmd_line, Command cmd_list[])
         if (num_program >= 1024) 
         {
             write(2, "ERROR: too many programs!\n", 26);
-            return;
+            return -1;
         }
         
         char * s = buf[j];
