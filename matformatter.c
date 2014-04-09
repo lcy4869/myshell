@@ -38,6 +38,7 @@
  		printf("error accessing shared memory\n");
  		return -1;
 	}
+	//printf("%d\t%d\n", itemsCol1, numRows1);
 	int transpose[itemsCol1][numRows1];
 	for (i = 0; i < itemsCol1; i++) {
 		int j;
@@ -59,5 +60,4 @@
 
 	return 0;
  }
-
 
