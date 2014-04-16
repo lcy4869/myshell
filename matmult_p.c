@@ -1,13 +1,12 @@
 /* File: matmult_p.c
  * Course: Spring 2014 BU CS 410 with Rich West, A2
- * Purpose:
- * Special Notes:
+ * Purpose: Multiplies two matrices from the standard input using a multi-processing approach.
+ * Special Notes: Huge matrices can cause a problem, e.g. a 40x40 matrix generating 1600 processes won't work
  * References and Citations:
  * BUCS410 A2 assignment sheet
  * http://linux.die.net/man/2/shmget
  *
  * Creator: Joel Mough, joelm@bu.edu BUID U95138815
- * Team: 
  */
 
 
@@ -48,14 +47,11 @@
 	keys[0] = leftArrayKey;
 	keys[1] = rightArrayKey;
 	keys[2] = sharedMemKey;
-	//printf("%d\t%d\t%d\t%d\n", numRows1, itemsCol1, numRows2, itemsCol2);
 
 	int pids[MAX_MATRIX_DIMENSION][MAX_MATRIX_DIMENSION];
- 	//printf("%d\t%d\n", numRows1, itemsCol2);
  	for (i = 0; i < numRows1; i++) {
  		int j;
  		for (j = 0; j < itemsCol2; j++) {
- 			//printf("currentRow: %d\tcurrentCol: %d\n", i, j);
  			// Cluaes that need piped; num in a col in 1, num in a row in 2, the row and col number of the new matrix
  			int fd[2];
  			pipe(fd);
@@ -79,7 +75,6 @@
  				return -1;
  			} else {
  				pids[i][j] = pid;
- 				//printf("in parent: %d\t%d\n", i, j);
  				close(fd[0]);
  				dprintf(fd[1], "%d\n%d\n%d\n%d\n%d\n%d\n%d\n%d\n", itemsCol1, itemsCol2, numRows2, i, j, leftArrayKey, rightArrayKey, sharedMemKey);
  				close(fd[1]);
@@ -88,7 +83,6 @@
  		}
  	}
 
- 	// ADD MORE sophisticated error checking later on. 
  	int normal = 1;
  	for (i = 0; i < numRows1; i++) {
  		int j;
@@ -105,7 +99,6 @@
 
 
 
- 	//printf("%d\t%d\n%d\t%d\n", result[0], result[1], result[2], result[3]);
  	for (i = 0; i < numRows1 && normal; i++) {
  		int j;
  		for (j = 0; j < itemsCol2; j++) {
@@ -119,14 +112,11 @@
  		}
  		
  	}
-	//putc('\n', stdout);
-	//putc('\n', stdout);
 
 	releaseSharedMemory(keys, 3);
 	if (!normal) {
 		return -1;
 	}
- 	// Ref http://stackoverflow.com/questions/279729/how-to-wait-untill-all-child-processes-called-by-fork-complete
  	return 0;
 
  }

@@ -1,21 +1,19 @@
 /* File: multiply.c
  * Course: Spring 2014 BU CS 410 with Rich West, A2
- * Purpose:
- * Special Notes:
+ * Purpose: Reads in a pipe file descriptor, opens it, and gets certain info about the row/column of two matrices it will be multiplying
  * References and Citations:
  * BUCS410 A2 assignment sheet
  * http://linux.die.net/man/2/shmget
  *
  * Creator: Joel Mough, joelm@bu.edu BUID U95138815
- * Team: 
  */
 
- #include <stdio.h>
- #include <stdlib.h>
- #include <string.h>
- #include <unistd.h>
- #include <sys/ipc.h>
- #include <sys/shm.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/ipc.h>
+#include <sys/shm.h>
 #include <sys/stat.h>
 
  #define MAX_DIGITS_INT 20
@@ -88,10 +86,9 @@
  	for (i = 0; i < numRows2; i++) {
  		runningSol += leftArray[currentRow*numCol1 + i]*rightArray[i*numCol2 + currentCol];
  	}
- 	//printf("%d\n", currentRow*numCol1 + currentCol);
+
  	newArray[currentRow*numCol2 + currentCol] = runningSol;
-	//printf("crow: %d\n", numCol1);
-	//printf("%d\n", currentRow*numCol1 + currentCol);
+
  	return 0;
 
  }

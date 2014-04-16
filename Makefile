@@ -1,5 +1,5 @@
 
-generated_files_matmult_p = multiply matmult_p matmult_p.o multiply.o matformatter matformatter.o
+generated_files_matmult_p = multiply matmult_p matmult_p.o multiply.o matformatter matformatter.o matmult_t test
 
 all: matmult_p matmult_t matformatter myshell test
 

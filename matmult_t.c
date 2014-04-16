@@ -3,13 +3,6 @@
  * Filename: matmult_t.c
  * Jingzhi Gao
  *
- * Description:
- *   This program uses a multi-threaded approach to multiply two integer 
- *   matrices. This task is accomplished by creating machine contexts within a 
- *   single process address space, and switches between these contexts two 
- *   multiply one row by one column of the input matrices per thread. The 
- *   context-switching is implemented with a user-defined signal, as well as 
- *   setjmp, longjmp, and sigaltstack.
  * 
  */
 

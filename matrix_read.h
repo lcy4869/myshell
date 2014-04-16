@@ -10,7 +10,6 @@
  * BUCS410 A2 assignment sheet
  *
  * Creator: Joel Mough, joelm@bu.edu BUID U95138815
- * Team: 
  */
 #ifndef MATRIX_READ_H
 #define MATRIX_READ_H

@@ -5,12 +5,10 @@
    (one space in between the matrices)
  * It reads in two matrices, converts them to strings, and puts them in shared memory regions, and then stores the keys in the shared memory redions. 
  *
- * Special Notes:
  * References and Citations:
  * BUCS410 A2 assignment sheet
  *
  * Creator: Joel Mough, joelm@bu.edu BUID U95138815
- * Team: 
  */
 
 #include "matrix_read.h"
@@ -22,6 +20,7 @@
 #include <sys/shm.h>
 #include <sys/stat.h>
 
+// Goes through an integer array of memory keys and gets rid of the shared memory segments
 void releaseSharedMemory(int *keys, int numKeys) {
 	int i; 
 	for (i = 0; i < numKeys; i++) {
@@ -30,6 +29,7 @@ void releaseSharedMemory(int *keys, int numKeys) {
 	return;
 }
 
+// Deallocates memory
 void freeMem(char **stringArray, int numRows) {
 	int i = 0;
 	for (i = 0; i < numRows; i++) {
@@ -107,15 +107,9 @@ int readTwoMatrices(int *leftMatrix, int *rightMatrix, int *rows1, int *cols1, i
 		freeMem(temp2, numRows2);
  		return -1;
  	}
- 	// Basically needs to get this all into memory, free it, set up integer matrices of approrpaite size. Use the
- 	// pipe method in class to pipe over three things: the memory key of the new matrix, the memory key of the old matrix,
- 	// and the row and column numbers.
- 	// Time to set up the integer matrices
- 	// Sets up the "left" (first) array
-	//printf("%d\t%d\t%d\t%d\n", numRows1, itemsCol1, numRows2, itemsCol2);
+
  	int leftArrayKey = shmget(0, itemsCol1*numRows1*sizeof(int), IPC_CREAT | S_IRUSR | S_IWUSR);
  	if (leftArrayKey < 0) {
- 		printf("here\n");
  		printf("%d\t%d\n", itemsCol1, numRows1);
 
  		perror("shmget failed: ");
@@ -131,7 +125,6 @@ int readTwoMatrices(int *leftMatrix, int *rightMatrix, int *rows1, int *cols1, i
  	}
  	
  	
-	//printf("%s\n", temp[0]);
  	int *leftArray = (int *)leftArrayVoid;
   	for (i = 0; i < numRows1; i++) {
  		int j = 0;

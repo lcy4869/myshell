@@ -1,13 +1,11 @@
 /* File: multiply.c
  * Course: Spring 2014 BU CS 410 with Rich West, A2
- * Purpose:
- * Special Notes:
+ * Purpose: Takes in a matrix and outputs its transpose to Standard Out
  * References and Citations:
  * BUCS410 A2 assignment sheet
  * http://linux.die.net/man/2/shmget
  *
  * Creator: Joel Mough, joelm@bu.edu BUID U95138815
- * Team: 
  * Purpose: Takes in a matrix from the standard in, computes it's transpose, and outputs it to the standard output
  */
 
@@ -38,7 +36,7 @@
  		printf("error accessing shared memory\n");
  		return -1;
 	}
-	//printf("%d\t%d\n", itemsCol1, numRows1);
+
 	int transpose[itemsCol1][numRows1];
 	for (i = 0; i < itemsCol1; i++) {
 		int j;
